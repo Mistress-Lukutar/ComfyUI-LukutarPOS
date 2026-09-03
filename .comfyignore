@@ -1,0 +1,5 @@
+# Files git-tracked but excluded from the registry package
+# (comfy node publish ships every git-tracked file not listed here).
+tests/
+conftest.py
+AGENTS.md

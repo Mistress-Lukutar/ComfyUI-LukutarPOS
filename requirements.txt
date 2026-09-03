@@ -1,0 +1,6 @@
+# Runtime dependencies beyond the ComfyUI base (torch, numpy, Pillow
+# ship with it). pywin32 is only pulled in on Windows — the RAW print
+# transport needs it; file/stream output works everywhere.
+segno>=1.6
+python-barcode>=0.15
+pywin32; sys_platform == "win32"

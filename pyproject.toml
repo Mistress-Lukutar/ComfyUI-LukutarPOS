@@ -1,0 +1,50 @@
+[project]
+# Registry node name — immutable after the first publish.
+name = "lukutar-pos-nodes"
+version = "0.1.0"
+description = "ComfyUI custom node pack: POS label composition and printing (ESC/POS graphic page) for Custom TPTCM60/112 kiosk printers."
+authors = [{ name = "Mistress-Lukutar" }]
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+dependencies = [
+    # torch, numpy and Pillow are provided by the ComfyUI runtime.
+    "segno>=1.6",
+    "python-barcode>=0.15",
+    "pywin32; sys_platform == 'win32'",
+]
+
+[project.urls]
+Repository = "https://github.com/Mistress-Lukutar/ComfyUI-LukutarPOS"
+
+[tool.comfy]
+PublisherId = "mistress-lukutar"
+DisplayName = "Lukutar POS Nodes"
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# importlib mode keeps sys.path untouched: the ComfyUI-mandated root
+# __init__.py must never be importable as a plain "__init__" module.
+addopts = "--import-mode=importlib"
+consider_namespace_packages = false
+
+[tool.ruff]
+line-length = 88
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]
+
+[tool.mypy]
+python_version = "3.10"
+
+# Third-party deps without type stubs (python-barcode, segno, pywin32).
+[[tool.mypy.overrides]]
+module = ["barcode", "barcode.*", "segno", "win32print"]
+ignore_missing_imports = true
