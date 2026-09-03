@@ -15,8 +15,10 @@ Run with ComfyUI's own python (no server launch required):
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import tempfile
+import types
 from pathlib import Path
 
 import numpy as np
@@ -72,6 +74,11 @@ def main() -> None:
     for key in EXPECTED_NODES:
         assert key in mappings, f"{key} not registered"
         assert key in pack.NODE_DISPLAY_NAME_MAPPINGS  # type: ignore[attr-defined]
+
+    # ComfyUI silently drops a node whose INPUT_TYPES raises when it
+    # builds /object_info — every node must answer with a JSON spec.
+    for key in EXPECTED_NODES:
+        json.dumps(mappings[key].INPUT_TYPES())
 
     # Element chain: canvas -> frame -> image -> text -> barcode -> QR.
     (label,) = mappings["LabelCanvas"]().create(
@@ -145,11 +152,38 @@ def main() -> None:
     assert bitmap.any(), "composed label must contain ink"
     assert not bitmap.all(), "composed label must contain paper"
 
-    # Preview converts to a valid IMAGE tensor.
-    (preview,) = mappings["LabelPreview"]().preview(label)
-    assert preview.dtype == torch.float32
-    assert tuple(preview.shape) == (1, 320, 448, 3)
-    assert float(preview.min()) >= 0.0 and float(preview.max()) <= 1.0
+    # Preview passes the label through, returns a valid IMAGE tensor
+    # and writes the in-node PNG into ComfyUI's temp dir (stubbed here:
+    # the smoke test runs outside the ComfyUI server, so the real
+    # folder_paths module is not importable).
+    with tempfile.TemporaryDirectory() as tmp:
+        stub = types.SimpleNamespace(
+            get_temp_directory=lambda: tmp,
+            get_save_image_path=lambda prefix, out_dir, w=0, h=0: (
+                out_dir,
+                prefix,
+                5,
+                "",
+                prefix,
+            ),
+        )
+        sys.modules["folder_paths"] = stub  # type: ignore[assignment]
+        try:
+            preview_result = mappings["LabelPreview"]().preview(label)
+        finally:
+            del sys.modules["folder_paths"]
+        label_out, preview = preview_result["result"]
+        assert label_out is label
+        assert preview.dtype == torch.float32
+        assert tuple(preview.shape) == (1, 320, 448, 3)
+        assert float(preview.min()) >= 0.0 and float(preview.max()) <= 1.0
+        ui_image = preview_result["ui"]["images"][0]
+        assert ui_image == {
+            "filename": "LabelPreview_00005_.png",
+            "subfolder": "",
+            "type": "temp",
+        }
+        assert (Path(tmp) / ui_image["filename"]).exists()
 
     # Save node writes the exact ESC/POS payload to disk.
     save_node = mappings["SaveLabelStream"]()

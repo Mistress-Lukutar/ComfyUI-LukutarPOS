@@ -13,6 +13,7 @@ imported lazily so the module imports on any plain python.
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 from ..core import label as core
@@ -36,6 +37,35 @@ def _output_directory() -> str:
         return "./output"
 
 
+def _save_temp_preview(
+    label: core.LabelDocument, filename_prefix: str
+) -> dict[str, str] | None:
+    '''Write the label bitmap into ComfyUI's temp dir for the node UI.
+
+    Args:
+        label: The document to show.
+        filename_prefix: Temp file name prefix before the counter.
+
+    Returns:
+        The ``images`` entry for the UI response, or None outside the
+        ComfyUI runtime (e.g. unit tests on a plain python).
+    '''
+    try:
+        import folder_paths
+    except ImportError:
+        return None
+
+    folder, filename, counter, subfolder, _ = folder_paths.get_save_image_path(
+        filename_prefix,
+        folder_paths.get_temp_directory(),
+        label.width_dots,
+        label.height_dots,
+    )
+    file = f"{filename}_{counter:05}_.png"
+    label.image.save(Path(folder) / file, compress_level=4)
+    return {"filename": file, "subfolder": subfolder, "type": "temp"}
+
+
 def _make_progress_bar(total: int) -> Any:
     '''Create a ComfyUI progress bar; None outside the ComfyUI runtime.
 
@@ -54,14 +84,16 @@ def _make_progress_bar(total: int) -> Any:
 
 
 class LabelPreviewNode:
-    '''Show the label as a regular ComfyUI image.
+    '''Show the label inside the node and pass it on.
 
-    The preview is pixel-exact: it is the same 1-bit bitmap the printer
-    receives, upscaled to RGB. Zoom in — each preview pixel is one
-    print dot.
-'''
+    The in-node preview is pixel-exact: it is the same 1-bit bitmap the
+    printer receives — zoom in and each preview pixel is one print dot.
+    The LABEL input is returned unchanged (pass-through, so the preview
+    can sit mid-chain), and the bitmap also comes out as an IMAGE.
+    '''
 
     CATEGORY = "Lukutar/POS"
+    OUTPUT_NODE = True
 
     @classmethod
     def INPUT_TYPES(cls) -> dict[str, dict[str, tuple]]:
@@ -74,20 +106,31 @@ class LabelPreviewNode:
             },
         }
 
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("preview",)
+    RETURN_TYPES = ("LABEL", "IMAGE")
+    RETURN_NAMES = ("label", "preview")
     FUNCTION = "preview"
+    OUTPUT_TOOLTIPS = (
+        "The label, unchanged (pass-through)",
+        "The 1-bit label bitmap as an RGB IMAGE",
+    )
 
-    def preview(self, label: core.LabelDocument) -> tuple[Any]:
-        '''Convert the label bitmap into an IMAGE tensor.
+    def preview(self, label: core.LabelDocument) -> dict[str, Any]:
+        '''Render the label into the node and pass it through.
 
         Args:
             label: The document to show.
 
         Returns:
-            One-element tuple with a (1, H, W, 3) tensor.
+            Result dict: ``(label, preview IMAGE)`` plus a UI image
+            annotation that the frontend draws inside the node.
         '''
-        return (label_to_tensor(label),)
+        result: dict[str, Any] = {
+            "result": (label, label_to_tensor(label)),
+        }
+        temp_image = _save_temp_preview(label, "LabelPreview")
+        if temp_image is not None:
+            result["ui"] = {"images": [temp_image]}
+        return result
 
 
 class PrintLabelNode:

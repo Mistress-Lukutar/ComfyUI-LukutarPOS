@@ -35,15 +35,15 @@ NODE_CLASS_MAPPINGS: dict[str, type] = {
 }
 
 NODE_DISPLAY_NAME_MAPPINGS: dict[str, str] = {
-    "LabelCanvas": "Label Canvas (Lukutar)",
-    "LabelImage": "Label Image (Lukutar)",
-    "LabelText": "Label Text (Lukutar)",
-    "LabelBarcode": "Label Barcode (Lukutar)",
-    "LabelQR": "Label QR Code (Lukutar)",
-    "LabelRect": "Label Line / Frame (Lukutar)",
-    "LabelPreview": "Label Preview (Lukutar)",
-    "PrintLabel": "Print Label / Windows RAW (Lukutar)",
-    "SaveLabelStream": "Save Label Stream / ESC-POS (Lukutar)",
+    "LabelCanvas": "Label Canvas",
+    "LabelImage": "Label Image",
+    "LabelText": "Label Text",
+    "LabelBarcode": "Label Barcode",
+    "LabelQR": "Label QR Code",
+    "LabelRect": "Label Line / Frame",
+    "LabelPreview": "Label Preview",
+    "PrintLabel": "Print Label / Windows RAW",
+    "SaveLabelStream": "Save Label Stream / ESC-POS",
 }
 
 __all__ = [

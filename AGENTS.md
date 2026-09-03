@@ -15,7 +15,8 @@ bold, 9-grid anchor, per-line align); **Label Barcode** — CODE128 /
 CODE39 / EAN-13 / EAN-8 / UPC-A / ITF / CODABAR rendered into the
 bitmap with auto checksums and optional HRI; **Label QR Code** —
 segno-rendered QR; **Label Line / Frame** — rectangle outline or filled
-block; **Label Preview** — pixel-exact IMAGE preview; **Print Label /
+block; **Label Preview** — in-node pixel-exact preview (output node,
+pass-through `LABEL` + `IMAGE` out); **Print Label /
 Windows RAW** — RAW-spooler printing with quality/finish/copies;
 **Save Label Stream / ESC-POS** — writes the raw payload to a file.
 
@@ -39,6 +40,8 @@ with any behavior change.
   pattern: `_make_progress_bar` in `nodes/label_output.py`).
 - `utils/` — torch IMAGE-tensor ⇄ numpy conversion helpers (torch
   imported lazily inside the functions).
+- `web/` — frontend extension served via `WEB_DIRECTORY` (Label Canvas
+  greys out the dot-size widgets unless the preset is `custom`).
 - `assets/fonts/` — bundled DejaVu TTFs resolvable by name (`""`,
   `bold`, `mono`); any absolute .ttf/.otf path also works.
 - `tests/unit/` — engine + node tests, torch-free.
@@ -47,7 +50,8 @@ with any behavior change.
 
 Adding a node: logic in `core/`, node class in `nodes/`, then register
 it in `nodes/__init__.py` (`NODE_CLASS_MAPPINGS` +
-`NODE_DISPLAY_NAME_MAPPINGS`, display name suffix `(Lukutar)`).
+`NODE_DISPLAY_NAME_MAPPINGS`, plain display names without a pack
+suffix).
 
 ## Key contracts
 

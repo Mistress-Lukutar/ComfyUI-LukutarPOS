@@ -8,8 +8,11 @@ Version: v0.1.0
 
 from __future__ import annotations
 
+import json
+
 import numpy as np
 from comfyui_lukutar_pos.core.label import LabelDocument
+from comfyui_lukutar_pos.nodes import NODE_CLASS_MAPPINGS
 from comfyui_lukutar_pos.nodes.label_elements import (
     LabelBarcodeNode,
     LabelCanvasNode,
@@ -21,6 +24,22 @@ from comfyui_lukutar_pos.nodes.label_elements import (
 
 def _canvas(size: str = "60mm roll / 40mm label (448x320)") -> LabelDocument:
     return LabelCanvasNode().create(size)[0]
+
+
+def test_all_nodes_expose_valid_input_types():
+    """Every registered node answers INPUT_TYPES with a JSON spec.
+
+    Regression: ComfyUI silently drops a node from /object_info when
+    its INPUT_TYPES raises (Label Image once referenced a dithering
+    constant through the wrong module).
+    """
+    assert len(NODE_CLASS_MAPPINGS) == 9
+    for key, node_cls in NODE_CLASS_MAPPINGS.items():
+        spec = node_cls.INPUT_TYPES()
+        json.dumps(spec)
+        assert "required" in spec, key
+        assert len(node_cls.RETURN_TYPES) == len(node_cls.RETURN_NAMES), key
+        assert callable(getattr(node_cls, node_cls.FUNCTION, None)), key
 
 
 def test_canvas_presets():

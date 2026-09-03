@@ -18,6 +18,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from ..core import DITHER_METHODS
 from ..core import label as core
 from ..utils.images import tensor_frame_to_gray
 
@@ -216,7 +217,7 @@ class LabelImageNode:
                     },
                 ),
                 "dither": (
-                    list(core.DITHER_METHODS),
+                    list(DITHER_METHODS),
                     {
                         "default": core.DITHER_FLOYD_STEINBERG,
                         "tooltip": (

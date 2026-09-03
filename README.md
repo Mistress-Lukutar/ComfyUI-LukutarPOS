@@ -52,8 +52,9 @@ Starts the label. Presets cover the common stock: 60 mm roll
 (448-dot printable width) with 20/30/40/60 mm or full-page
 (585-dotline) feed, 112 mm roll (832 dots) with 20/30 mm or full-page
 (315-dotline) feed, and `custom` (dot widgets; max 832 × the model's
-page height). `dark_background` starts the canvas black for
-white-ink designs.
+page height). The `width_dots`/`height_dots` widgets are greyed out
+unless `custom` is selected — stock presets ignore them.
+`dark_background` starts the canvas black for white-ink designs.
 
 ### Label Image
 
@@ -97,10 +98,13 @@ level (`l`=7%, `m`=15%, `q`=25%, `h`=30%).
 Rectangle outline or filled block. A filled rectangle of height ~1 mm
 is a horizontal rule; an outline rectangle is the classic label border.
 
-### Label Preview
+### Label Preview (output node)
 
-Converts the label into a regular ComfyUI IMAGE — the same 1-bit
-bitmap the printer receives, upscaled to RGB.
+Shows the label right inside the node — the same 1-bit bitmap the
+printer receives, so every preview pixel is one print dot. The node is
+a pass-through: it returns the input `LABEL` unchanged plus the
+bitmap as a regular ComfyUI `IMAGE`, so a preview can sit anywhere in
+the chain, not just at the end.
 
 ### Print Label / Windows RAW (output node)
 

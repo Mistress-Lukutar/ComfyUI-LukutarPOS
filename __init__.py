@@ -10,6 +10,9 @@ from __future__ import annotations
 
 __version__ = "0.1.0"
 
+#: Frontend extension files (ComfyUI serves them to the browser).
+WEB_DIRECTORY = "./web"
+
 if __package__:
     # Normal case: imported as a package (ComfyUI's custom node loader,
     # smoke test) — relative imports resolve as usual.
@@ -26,5 +29,6 @@ else:
 __all__ = [
     "NODE_CLASS_MAPPINGS",
     "NODE_DISPLAY_NAME_MAPPINGS",
+    "WEB_DIRECTORY",
     "__version__",
 ]
