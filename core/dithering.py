@@ -120,7 +120,9 @@ def _dither_ordered(
         tiles_h, size, tiles_w, size
     ).swapaxes(1, 2)
     dots = blocks < matrix[np.newaxis, np.newaxis, :, :]
-    out = dots.reshape(tiles_h * size, tiles_w * size)[:h, :w]
+    # swapaxes back before reshape — otherwise the tiles are laid out
+    # transposed and the picture scrambles into artefacts.
+    out = dots.swapaxes(1, 2).reshape(tiles_h * size, tiles_w * size)[:h, :w]
     return np.ascontiguousarray(out)
 
 

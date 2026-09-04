@@ -33,7 +33,7 @@ def test_all_nodes_expose_valid_input_types():
     its INPUT_TYPES raises (Label Image once referenced a dithering
     constant through the wrong module).
     """
-    assert len(NODE_CLASS_MAPPINGS) == 9
+    assert len(NODE_CLASS_MAPPINGS) == 10
     for key, node_cls in NODE_CLASS_MAPPINGS.items():
         spec = node_cls.INPUT_TYPES()
         json.dumps(spec)

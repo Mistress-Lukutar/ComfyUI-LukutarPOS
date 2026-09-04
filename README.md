@@ -16,8 +16,6 @@ and QR included), so **the preview is pixel-exact with the print**.
   math.
 - Photo-ready image pipeline: contain/cover/stretch fit, tone controls
   and Floyd–Steinberg / Bayer / threshold dithering.
-- TTF text with bundled Cyrillic-safe DejaVu fonts — the printer's code
-  pages are never involved.
 - Barcodes (CODE128, CODE39, EAN-13/8, UPC-A, ITF, CODABAR) and QR
   codes rendered straight into the bitmap.
 - In-node pixel-exact preview, Windows RAW printing with
@@ -50,11 +48,12 @@ any stage can be previewed.
 |------|---------|
 | **Label Canvas** | Start a label from a stock preset (60/112 mm rolls) or a custom dot size |
 | **Label Image** | Dither one IMAGE frame into a mm box (fit modes, dither methods, tone controls) |
+| **Label Image Rotate** | Turn an IMAGE batch so its orientation matches the label — auto aspect-ratio comparison or a fixed 90/180 |
 | **Label Text** | Multiline TTF text with font/size/align controls |
 | **Label Barcode** | 1-D barcodes with auto checksums and optional HRI text |
 | **Label QR Code** | segno-rendered QR with selectable error correction |
 | **Label Line / Frame** | Rectangle outline or filled block |
-| **Label Preview** | In-node pixel-exact preview; pass-through `LABEL` + `IMAGE` out |
+| **Label Preview** | In-node pixel-exact preview; pass-through `LABEL` + `IMAGE` out; the PNG carries prompt/workflow metadata |
 | **Print Label / Windows RAW** | Print via the Windows RAW spooler (quality, finish, copies) |
 | **Save Label Stream / ESC-POS** | Write the raw ESC/POS payload to a file |
 

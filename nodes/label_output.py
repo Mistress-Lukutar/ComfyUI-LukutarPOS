@@ -12,6 +12,7 @@ imported lazily so the module imports on any plain python.
 
 from __future__ import annotations
 
+import json
 import logging
 from pathlib import Path
 from typing import Any
@@ -37,14 +38,48 @@ def _output_directory() -> str:
         return "./output"
 
 
+def _png_metadata(prompt: Any, extra_pnginfo: Any) -> Any:
+    '''Build the PNG text chunks ComfyUI writes into saved images.
+
+    Same convention as the stock SaveImage/PreviewImage nodes: the
+    prompt under the ``prompt`` key, every entry of ``extra_pnginfo``
+    (workflow lives there) under its own key, all JSON-encoded.
+
+    Args:
+        prompt: The hidden PROMPT value, or None outside a run.
+        extra_pnginfo: The hidden EXTRA_PNGINFO value, or None.
+
+    Returns:
+        A PngInfo with the chunks, or None when there is nothing to
+        embed (e.g. the node was called from a test).
+    '''
+    if prompt is None and extra_pnginfo is None:
+        return None
+    from PIL import PngImagePlugin
+
+    metadata = PngImagePlugin.PngInfo()
+    if prompt is not None:
+        metadata.add_text("prompt", json.dumps(prompt))
+    if extra_pnginfo is not None:
+        for key in extra_pnginfo:
+            metadata.add_text(key, json.dumps(extra_pnginfo[key]))
+    return metadata
+
+
 def _save_temp_preview(
-    label: core.LabelDocument, filename_prefix: str
+    label: core.LabelDocument,
+    filename_prefix: str,
+    prompt: Any = None,
+    extra_pnginfo: Any = None,
 ) -> dict[str, str] | None:
     '''Write the label bitmap into ComfyUI's temp dir for the node UI.
 
     Args:
         label: The document to show.
         filename_prefix: Temp file name prefix before the counter.
+        prompt: Hidden PROMPT; embedded into the PNG metadata.
+        extra_pnginfo: Hidden EXTRA_PNGINFO (workflow etc.); embedded
+            into the PNG metadata.
 
     Returns:
         The ``images`` entry for the UI response, or None outside the
@@ -62,7 +97,11 @@ def _save_temp_preview(
         label.height_dots,
     )
     file = f"{filename}_{counter:05}_.png"
-    label.image.save(Path(folder) / file, compress_level=4)
+    label.image.save(
+        Path(folder) / file,
+        pnginfo=_png_metadata(prompt, extra_pnginfo),
+        compress_level=4,
+    )
     return {"filename": file, "subfolder": subfolder, "type": "temp"}
 
 
@@ -89,7 +128,9 @@ class LabelPreviewNode:
     The in-node preview is pixel-exact: it is the same 1-bit bitmap the
     printer receives — zoom in and each preview pixel is one print dot.
     The LABEL input is returned unchanged (pass-through, so the preview
-    can sit mid-chain), and the bitmap also comes out as an IMAGE.
+    can sit mid-chain), and the bitmap also comes out as an IMAGE. The
+    preview PNG carries the workflow/prompt metadata, like the stock
+    PreviewImage saves.
     '''
 
     CATEGORY = "Lukutar/POS"
@@ -104,6 +145,7 @@ class LabelPreviewNode:
                     {"tooltip": "Label to preview (pass-through)"},
                 ),
             },
+            "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
         }
 
     RETURN_TYPES = ("LABEL", "IMAGE")
@@ -114,11 +156,19 @@ class LabelPreviewNode:
         "The 1-bit label bitmap as an RGB IMAGE",
     )
 
-    def preview(self, label: core.LabelDocument) -> dict[str, Any]:
+    def preview(
+        self,
+        label: core.LabelDocument,
+        prompt: Any = None,
+        extra_pnginfo: Any = None,
+    ) -> dict[str, Any]:
         '''Render the label into the node and pass it through.
 
         Args:
             label: The document to show.
+            prompt: Hidden PROMPT, embedded into the preview PNG.
+            extra_pnginfo: Hidden EXTRA_PNGINFO (workflow), embedded
+                into the preview PNG.
 
         Returns:
             Result dict: ``(label, preview IMAGE)`` plus a UI image
@@ -127,7 +177,7 @@ class LabelPreviewNode:
         result: dict[str, Any] = {
             "result": (label, label_to_tensor(label)),
         }
-        temp_image = _save_temp_preview(label, "LabelPreview")
+        temp_image = _save_temp_preview(label, "LabelPreview", prompt, extra_pnginfo)
         if temp_image is not None:
             result["ui"] = {"images": [temp_image]}
         return result

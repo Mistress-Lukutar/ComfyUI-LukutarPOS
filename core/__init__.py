@@ -66,6 +66,16 @@ from .label import (
     mm_to_dots,
     prepare_image_block,
 )
+from .rotate import (
+    ROTATE_90_CCW,
+    ROTATE_90_CW,
+    ROTATE_180,
+    ROTATE_AUTO,
+    ROTATE_MODES,
+    ROTATE_NONE,
+    auto_quarter_turns,
+    resolve_rotation,
+)
 from .transport import save_stream_file, send_raw_windows
 
 __all__ = [
@@ -123,6 +133,15 @@ __all__ = [
     "load_font",
     "mm_to_dots",
     "prepare_image_block",
+    # image rotation
+    "ROTATE_90_CCW",
+    "ROTATE_90_CW",
+    "ROTATE_180",
+    "ROTATE_AUTO",
+    "ROTATE_MODES",
+    "ROTATE_NONE",
+    "auto_quarter_turns",
+    "resolve_rotation",
     # transport
     "save_stream_file",
     "send_raw_windows",

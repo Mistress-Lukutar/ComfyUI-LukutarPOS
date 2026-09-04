@@ -10,13 +10,16 @@ Nodes (menu category `Lukutar/POS`):
 or custom dot size, optional dark background); **Label Image** —
 dithers one IMAGE frame into a mm box (contain/cover/stretch,
 Floyd-Steinberg / Bayer / threshold, tone controls before dithering);
+**Label Image Rotate** — rotates an IMAGE batch so its orientation
+matches the label (auto aspect-ratio comparison or fixed 90/180);
 **Label Text** — TTF text (bundled DejaVu faces, Cyrillic-safe, fake
 bold, 9-grid anchor, per-line align); **Label Barcode** — CODE128 /
 CODE39 / EAN-13 / EAN-8 / UPC-A / ITF / CODABAR rendered into the
 bitmap with auto checksums and optional HRI; **Label QR Code** —
 segno-rendered QR; **Label Line / Frame** — rectangle outline or filled
 block; **Label Preview** — in-node pixel-exact preview (output node,
-pass-through `LABEL` + `IMAGE` out); **Print Label /
+pass-through `LABEL` + `IMAGE` out, PNG carries prompt/workflow
+metadata); **Print Label /
 Windows RAW** — RAW-spooler printing with quality/finish/copies;
 **Save Label Stream / ESC-POS** — writes the raw payload to a file.
 
@@ -27,7 +30,8 @@ with any behavior change.
 ## Layout & architecture boundaries
 
 - `core/` — pure engines: `label.py` (1-bit compositor, PIL),
-  `dithering.py`, `barcode.py` (module matrices, python-barcode
+  `dithering.py`, `rotate.py` (aspect-ratio quarter-turn selection),
+  `barcode.py` (module matrices, python-barcode
   charsets), `escpos.py` (byte-stream builder, no I/O), `transport.py`
   (Windows RAW spooler + file sink). **No ComfyUI imports, no torch** —
   must stay importable and unit-testable on any plain python that has

@@ -18,7 +18,12 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from ..core import DITHER_METHODS
+from ..core import (
+    DITHER_METHODS,
+    ROTATE_AUTO,
+    ROTATE_MODES,
+    resolve_rotation,
+)
 from ..core import label as core
 from ..utils.images import tensor_frame_to_gray
 
@@ -329,6 +334,127 @@ class LabelImageNode:
             label, bitmap, core.mm_to_dots(x_mm) + dx,
             core.mm_to_dots(y_mm) + dy, ink=True,
         ),)
+
+
+class LabelImageRotateNode:
+    '''Rotate an IMAGE so its orientation matches the label.
+
+    A portrait photo dropped on a landscape label fills only a third
+    of the box (contain) or gets cropped to a strip (cover). In
+    ``auto`` mode the node compares the image's aspect ratio with the
+    target's — the wired label's full canvas, or the millimetre box
+    widgets below — and turns the image 90 degrees exactly when the
+    orientations disagree (a square on either side never rotates: a
+    turn would gain nothing). Fixed 90/180 modes override the guess
+    when the source is known to lie on its side or upside down.
+    '''
+
+    CATEGORY = "Lukutar/POS"
+
+    @classmethod
+    def INPUT_TYPES(cls) -> dict[str, dict[str, tuple]]:
+        return {
+            "required": {
+                "image": (
+                    "IMAGE",
+                    {"tooltip": "Image batch to rotate"},
+                ),
+                "mode": (
+                    list(ROTATE_MODES),
+                    {
+                        "default": ROTATE_AUTO,
+                        "tooltip": (
+                            "auto: turn 90 when the image and target"
+                            " orientations disagree; or force a fixed"
+                            " turn"
+                        ),
+                    },
+                ),
+            },
+            "optional": {
+                "label": (
+                    "LABEL",
+                    {
+                        "tooltip": (
+                            "Rotation target: the whole label canvas"
+                            " (overrides the box widgets)"
+                        ),
+                    },
+                ),
+                "width_mm": (
+                    "FLOAT",
+                    {
+                        "default": 56.0,
+                        "min": 0.5,
+                        "tooltip": (
+                            "Target box width in mm (no label wired)"
+                        ),
+                    },
+                ),
+                "height_mm": (
+                    "FLOAT",
+                    {
+                        "default": 40.0,
+                        "min": 0.5,
+                        "tooltip": (
+                            "Target box height in mm (no label wired)"
+                        ),
+                    },
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE", "INT")
+    RETURN_NAMES = ("image", "angle")
+    FUNCTION = "rotate"
+    OUTPUT_TOOLTIPS = (
+        "The rotated image batch",
+        "The applied clockwise turn in degrees (0/90/180/270)",
+    )
+
+    def rotate(
+        self,
+        image: Any,
+        mode: str,
+        label: core.LabelDocument | None = None,
+        width_mm: float = 56.0,
+        height_mm: float = 40.0,
+    ) -> tuple[Any, int]:
+        '''Rotate the batch by the resolved number of quarter turns.
+
+        Args:
+            image: ComfyUI IMAGE tensor (B, H, W, C).
+            mode: One of :data:`core.ROTATE_MODES`.
+            label: Rotation target; its canvas size wins over the box.
+            width_mm: Target box width in mm when no label is wired.
+            height_mm: Target box height in mm when no label is wired.
+
+        Returns:
+            The (possibly) rotated batch and the clockwise angle.
+        '''
+        if label is not None:
+            target_w, target_h = label.width_dots, label.height_dots
+        else:
+            target_w = core.mm_to_dots(width_mm)
+            target_h = core.mm_to_dots(height_mm)
+        turns_ccw = resolve_rotation(
+            mode, image.shape[2], image.shape[1], target_w, target_h
+        )
+        if turns_ccw:
+            import torch
+
+            image = torch.rot90(image, turns_ccw, dims=(1, 2))
+        angle_cw = (-turns_ccw * 90) % 360
+        logger.debug(
+            "rotate %s -> %d cw (%dx%d onto %dx%d)",
+            mode,
+            angle_cw,
+            image.shape[2],
+            image.shape[1],
+            target_w,
+            target_h,
+        )
+        return (image, angle_cw)
 
 
 class LabelTextNode:

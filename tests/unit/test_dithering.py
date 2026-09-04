@@ -44,6 +44,33 @@ def test_ordered_constant_gray_reproduces_bayer_pattern():
     assert out.sum() == pytest.approx(size * size * 0.75, abs=2)
 
 
+def test_ordered_dither_preserves_geometry():
+    """Ink lands where the dark pixels are, not scrambled into tiles.
+
+    Regression: the tile-vectorized Bayer path used to reshape the
+    swapped-axes block array without swapping back, which shuffled the
+    tiles and turned the picture into artefacts while keeping the same
+    overall dot density.
+    """
+    half_black = np.full((40, 40), 255.0, dtype=np.float32)
+    half_black[:, :20] = 0.0
+    gradient = np.tile(
+        np.linspace(0.0, 255.0, 64, dtype=np.float32), (64, 1)
+    )
+    for method in (
+        dithering.DITHER_ORDERED_2,
+        dithering.DITHER_ORDERED_4,
+        dithering.DITHER_ORDERED_8,
+    ):
+        out = dithering.dither(half_black, method)
+        assert out[:, :20].all(), method
+        assert not out[:, 20:].any(), method
+        graded = dithering.dither(gradient, method)
+        # Coverage must follow the gradient position, quarter by quarter.
+        quarters = [graded[:, i * 16 : (i + 1) * 16].mean() for i in range(4)]
+        assert quarters[0] > quarters[1] > quarters[2] > quarters[3], method
+
+
 def test_floyd_steinberg_extremes_are_exact():
     """Pure black stays all-ink, pure white stays paper."""
     black = np.zeros((16, 16), dtype=np.float32)

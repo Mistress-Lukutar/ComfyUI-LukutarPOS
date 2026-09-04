@@ -29,6 +29,7 @@ PACK_ROOT = Path(__file__).resolve().parent.parent
 EXPECTED_NODES = (
     "LabelCanvas",
     "LabelImage",
+    "LabelImageRotate",
     "LabelText",
     "LabelBarcode",
     "LabelQR",
@@ -152,6 +153,25 @@ def main() -> None:
     assert bitmap.any(), "composed label must contain ink"
     assert not bitmap.all(), "composed label must contain paper"
 
+    # Rotate node: portrait image onto the landscape label turns 90 cw,
+    # matching orientations pass the batch through untouched, fixed
+    # modes override the guess.
+    rotate_node = mappings["LabelImageRotate"]()
+    portrait = torch.rand(1, 96, 64, 3)  # (B, H, W, C), H > W
+    rotated, angle = rotate_node.rotate(portrait, "auto", label=label)
+    assert angle == 90
+    assert tuple(rotated.shape) == (1, 64, 96, 3)
+    landscape = torch.rand(1, 64, 96, 3)
+    same, angle = rotate_node.rotate(landscape, "auto", label=label)
+    assert angle == 0 and same is landscape
+    flipped, angle = rotate_node.rotate(portrait, "180")
+    assert angle == 180 and tuple(flipped.shape) == (1, 96, 64, 3)
+    # Without a label the mm box widgets are the rotation target.
+    rotated, angle = rotate_node.rotate(
+        landscape, "auto", width_mm=20.0, height_mm=40.0
+    )
+    assert angle == 90 and tuple(rotated.shape) == (1, 96, 64, 3)
+
     # Preview passes the label through, returns a valid IMAGE tensor
     # and writes the in-node PNG into ComfyUI's temp dir (stubbed here:
     # the smoke test runs outside the ComfyUI server, so the real
@@ -169,7 +189,11 @@ def main() -> None:
         )
         sys.modules["folder_paths"] = stub  # type: ignore[assignment]
         try:
-            preview_result = mappings["LabelPreview"]().preview(label)
+            prompt = {"3": {"class_type": "LabelPreview"}}
+            workflow = {"nodes": [], "links": []}
+            preview_result = mappings["LabelPreview"]().preview(
+                label, prompt=prompt, extra_pnginfo={"workflow": workflow}
+            )
         finally:
             del sys.modules["folder_paths"]
         label_out, preview = preview_result["result"]
@@ -183,7 +207,14 @@ def main() -> None:
             "subfolder": "",
             "type": "temp",
         }
-        assert (Path(tmp) / ui_image["filename"]).exists()
+        png_path = Path(tmp) / ui_image["filename"]
+        assert png_path.exists()
+        # The temp PNG embeds the ComfyUI metadata, like PreviewImage.
+        from PIL import Image as PILImage
+
+        with PILImage.open(png_path) as saved:
+            assert json.loads(saved.info["prompt"]) == prompt
+            assert json.loads(saved.info["workflow"]) == workflow
 
     # Save node writes the exact ESC/POS payload to disk.
     save_node = mappings["SaveLabelStream"]()

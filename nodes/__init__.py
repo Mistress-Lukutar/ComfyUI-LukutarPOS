@@ -12,6 +12,7 @@ from .label_elements import (
     LabelBarcodeNode,
     LabelCanvasNode,
     LabelImageNode,
+    LabelImageRotateNode,
     LabelQRNode,
     LabelRectNode,
     LabelTextNode,
@@ -25,6 +26,7 @@ from .label_output import (
 NODE_CLASS_MAPPINGS: dict[str, type] = {
     "LabelCanvas": LabelCanvasNode,
     "LabelImage": LabelImageNode,
+    "LabelImageRotate": LabelImageRotateNode,
     "LabelText": LabelTextNode,
     "LabelBarcode": LabelBarcodeNode,
     "LabelQR": LabelQRNode,
@@ -37,6 +39,7 @@ NODE_CLASS_MAPPINGS: dict[str, type] = {
 NODE_DISPLAY_NAME_MAPPINGS: dict[str, str] = {
     "LabelCanvas": "Label Canvas",
     "LabelImage": "Label Image",
+    "LabelImageRotate": "Label Image Rotate",
     "LabelText": "Label Text",
     "LabelBarcode": "Label Barcode",
     "LabelQR": "Label QR Code",
