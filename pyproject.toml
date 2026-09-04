@@ -1,7 +1,7 @@
 [project]
 # Registry node name — immutable after the first publish.
 name = "lukutar-pos-nodes"
-version = "0.1.0"
+version = "0.2.0"
 description = "ComfyUI custom node pack: POS label composition and printing (ESC/POS graphic page) for Custom TPTCM60/112 kiosk printers."
 authors = [{ name = "Mistress-Lukutar" }]
 readme = "README.md"

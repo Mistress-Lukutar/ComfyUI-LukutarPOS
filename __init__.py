@@ -8,7 +8,7 @@ Version: v0.1.0
 
 from __future__ import annotations
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 #: Frontend extension files (ComfyUI serves them to the browser).
 WEB_DIRECTORY = "./web"
